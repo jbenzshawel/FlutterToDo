@@ -1,8 +1,9 @@
 class Item {
-  const Item({this.id, this.title, this.description});
-  final String id;
-  final String title;
-  final String description;
+  String id;
+  String title;
+  String description;
+
+  Item({this.id, this.title, this.description});  
 
   Map toJson() { 
     Map map = new Map();
