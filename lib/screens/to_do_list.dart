@@ -4,15 +4,17 @@ import '../shared/item.dart';
 import '../shared/storage.dart';
 
 typedef void ListChangedCallback(Item item, bool inCart);
+typedef void ListItemRemovedCallback(String id);
 
 class ToDoListItem extends StatelessWidget {
-  ToDoListItem({Item item, this.inList, this.onListChanged})
-      : item = item,
-        super(key: new ObjectKey(item));
-
   final Item item;
   final bool inList;
   final ListChangedCallback onListChanged;
+  final ListItemRemovedCallback onListItemRemovedCallback;
+
+  ToDoListItem({Item item, this.inList, this.onListChanged, this.onListItemRemovedCallback})
+      : item = item,
+        super(key: new ObjectKey(item));
 
   Color _getColor(BuildContext context) {
     return inList ? Colors.black54 : Theme.of(context).primaryColor;
@@ -27,19 +29,69 @@ class ToDoListItem extends StatelessWidget {
     );
   }
 
+  void _deleteItemPressed(BuildContext context, Item item) {
+    void deleteConfirmCallback () {
+      Storage storage = new Storage();
+      storage.deleteToDoItem(item.id);
+      
+      // call the method from ToDoList to remove the item from the view
+      onListItemRemovedCallback(item.id);
+
+      // close the modal
+      Navigator.pop(context, false);      
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      child: new AlertDialog(
+        title: const Text('Delete Confirmation'),
+        content: new Text('Are you sure you want to delete the "${item.title}" item?'),
+        actions: <Widget>[
+          new FlatButton(
+            onPressed: deleteConfirmCallback,
+            child: new Row(
+              children: <Widget>[
+                const Text('Yes'),
+              ],
+            ),
+          ),
+          new FlatButton(
+            onPressed: () {
+              Navigator.pop(context, false);
+            },
+            child: const Text('No'),
+          ),
+        ],
+      )
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return new ListTile(
-      onTap: () {
-        onListChanged(item, !inList);
-      },
-      leading: new CircleAvatar(
-        backgroundColor: _getColor(context),
-        child: new Text(item.title[0]),
-      ),
-      title: new Text(item.title, style: _getTextStyle(context)),
-      subtitle: new Text(item.description, style: _getTextStyle(context))
-    );
+    return new Row(
+      children: <Widget>[
+        new Expanded(
+          child: new ListTile(
+            onTap: () {
+              onListChanged(item, !inList);
+            },
+            leading: new CircleAvatar(
+              backgroundColor: _getColor(context),
+              child: new Text(item.title[0]),
+            ),
+            title: new Text(item.title, style: _getTextStyle(context)),
+            subtitle: new Text(item.description, style: _getTextStyle(context))
+          )
+        ),
+        new IconButton(
+          icon: new Icon(Icons.delete_outline),
+          padding: const EdgeInsets.only(bottom: 3.0, right: 3.0),
+          onPressed: () {
+            _deleteItemPressed(context, item);
+          },
+        )
+    ]);
   }
 }
 
@@ -67,6 +119,12 @@ class _ToDoListState extends State<ToDoList> {
     });
   }
 
+  void _handleToDoListRemove(String id) {
+    setState(() {
+      widget.items.removeWhere((i) => i.id == id);
+    });
+  }
+
   void _handleAddItemPress() {
     Widget dialogTitle = new Row(
       children: <Widget>[
@@ -74,14 +132,8 @@ class _ToDoListState extends State<ToDoList> {
           child: new Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              new Container(
-                child: new Text(
-                  "New To Do",
-                  style: new TextStyle(
-                    fontWeight: FontWeight.w200,
-                    fontSize: 24.0
-                  ),
-                )
+               new Text(
+                  "New To Do",  
               )
             ],
           ),
@@ -111,11 +163,9 @@ class _ToDoListState extends State<ToDoList> {
           buildTextField("Title", _newItemTitle),
           buildTextField("Description", _newItemDescription),
           new Container(
-            padding: const EdgeInsets.all(10.0),
+            padding: const EdgeInsets.only(top:30.0, left: 10.0, right: 10.0, bottom: 10.0),
             child: new MaterialButton(
-              onPressed: () {
-                _handleNewItemSave();
-              },
+              onPressed: _handleNewItemSave,
               child: const Text('Save'),
               color: Colors.blue,
               textColor: Colors.white,
@@ -164,6 +214,7 @@ class _ToDoListState extends State<ToDoList> {
             item: item,
             inList: _completedItems.contains(item),
             onListChanged: _handleToDoListChange,
+            onListItemRemovedCallback: _handleToDoListRemove,
           );
         }).toList(),
       ),

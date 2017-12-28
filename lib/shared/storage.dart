@@ -11,7 +11,7 @@ class Storage {
     List<Item> toDoItems = await getToDoItems();
 
     if (toDoItems.any((i) => i.id == item.id)) {
-      throw new Exception('Item with id $item.id already exists in storage.');
+      throw new Exception('Item with id ${item.id} already exists in storage.');
     }
 
     toDoItems.add(item);
@@ -21,10 +21,7 @@ class Storage {
   Future<Null> deleteToDoItem(String id) async {
     List<Item> toDoItems = await getToDoItems();
 
-    Item itemToRemove = toDoItems.firstWhere((i) => i.id == id);
-    if (itemToRemove != null) {
-      toDoItems.remove(itemToRemove);
-    }
+    toDoItems.removeWhere((i) => i.id == id);
 
     _updateStorage(toDoItems);
   }
