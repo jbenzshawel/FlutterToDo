@@ -1,27 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
+import 'dart:async';
 import '../shared/item.dart';
 import '../shared/storage.dart';
+import '../shared/action.dart';
 
-typedef void ListChangedCallback(Item item, bool inCart);
-typedef void ListItemRemovedCallback(String id);
+typedef void ListChangedCallback(Item item, Action action);
 
 class ToDoListItem extends StatelessWidget {
   final Item item;
-  final bool inList;
   final ListChangedCallback onListChanged;
-  final ListItemRemovedCallback onListItemRemovedCallback;
 
-  ToDoListItem({Item item, this.inList, this.onListChanged, this.onListItemRemovedCallback})
+  ToDoListItem({Item item, this.onListChanged})
       : item = item,
         super(key: new ObjectKey(item));
 
-  Color _getColor(BuildContext context) {
-    return inList ? Colors.black54 : Theme.of(context).primaryColor;
+  Color _getColor(BuildContext context, bool complete) {
+    return complete ? Colors.black54 : Theme.of(context).primaryColor;
   }
 
-  TextStyle _getTextStyle(BuildContext context) {
-    if (!inList) return null;
+  TextStyle _getTextStyle(BuildContext context, bool complete) {
+    if (!complete) return null;
 
     return new TextStyle(
       color: Colors.black54,
@@ -31,21 +30,22 @@ class ToDoListItem extends StatelessWidget {
 
   void _deleteItemPressed(BuildContext context, Item item) {
     void deleteConfirmCallback () {
+      // remove the item from storage
       Storage storage = new Storage();
       storage.deleteToDoItem(item.id);
       
-      // call the method from ToDoList to remove the item from the view
-      onListItemRemovedCallback(item.id);
+      // remove the item from the view
+      onListChanged(item, Action.delete);
 
       // close the modal
-      Navigator.pop(context, false);      
+      Navigator.pop(context, false);
     }
 
     showDialog(
       context: context,
       barrierDismissible: true,
       child: new AlertDialog(
-        title: const Text('Delete Confirmation'),
+        title: const Text('Delete Item'),
         content: new Text('Are you sure you want to delete the "${item.title}" item?'),
         actions: <Widget>[
           new FlatButton(
@@ -67,6 +67,17 @@ class ToDoListItem extends StatelessWidget {
     );
   }
 
+  void _itemCompletePressed(Item item) {
+    item.complete = !item.complete;
+
+    // update the item in storage
+    Storage storage = new Storage();
+    storage.updateToDoItem(item);
+
+    // update the item in the view
+    onListChanged(item, Action.update);
+  }
+
   @override
   Widget build(BuildContext context) {
     return new Row(
@@ -74,14 +85,14 @@ class ToDoListItem extends StatelessWidget {
         new Expanded(
           child: new ListTile(
             onTap: () {
-              onListChanged(item, !inList);
+              _itemCompletePressed(item);
             },
             leading: new CircleAvatar(
-              backgroundColor: _getColor(context),
+              backgroundColor: _getColor(context, item.complete),
               child: new Text(item.title[0]),
             ),
-            title: new Text(item.title, style: _getTextStyle(context)),
-            subtitle: new Text(item.description, style: _getTextStyle(context))
+            title: new Text(item.title, style: _getTextStyle(context, item.complete)),
+            subtitle: new Text(item.description, style: _getTextStyle(context, item.complete))
           )
         ),
         new IconButton(
@@ -105,24 +116,32 @@ class ToDoList extends StatefulWidget {
 }
 
 class _ToDoListState extends State<ToDoList> {
-  Set<Item> _completedItems = new Set<Item>();
+  final TextEditingController _itemTitleController = new TextEditingController();
+  final TextEditingController _itemDescriptionController = new TextEditingController();
 
-  final TextEditingController _newItemTitle = new TextEditingController();
-  final TextEditingController _newItemDescription = new TextEditingController();
-
-  void _handleToDoListChange(Item item, bool inList) {
-    setState(() {
-      if (inList)
-        _completedItems.add(item);
-      else
-        _completedItems.remove(item);
-    });
-  }
-
-  void _handleToDoListRemove(String id) {
-    setState(() {
-      widget.items.removeWhere((i) => i.id == id);
-    });
+  Future<Null> _changeToDoListState(Item item, Action action) async {
+    switch (action) {
+      case Action.create:
+        setState(() {
+          widget.items.add(item);
+        });
+        break;
+      case Action.update:
+        setState(() {
+          Item itemToUpdate = widget.items.firstWhere((i) => i.id == item.id);
+          itemToUpdate.title = item.title;
+          itemToUpdate.description = item.description;
+          itemToUpdate.complete = item.complete;
+        });
+        break;
+      case Action.delete:
+        setState(() {
+          widget.items.removeWhere((i) => i.id == item.id);
+        });
+        break;
+      default:
+        break; // do nothing
+    }
   }
 
   void _handleAddItemPress() {
@@ -160,8 +179,8 @@ class _ToDoListState extends State<ToDoList> {
       child: new SimpleDialog(
         title: dialogTitle,
         children: <Widget>[    
-          buildTextField("Title", _newItemTitle),
-          buildTextField("Description", _newItemDescription),
+          buildTextField("Title", _itemTitleController),
+          buildTextField("Description", _itemDescriptionController),
           new Container(
             padding: const EdgeInsets.only(top:30.0, left: 10.0, right: 10.0, bottom: 10.0),
             child: new MaterialButton(
@@ -177,8 +196,8 @@ class _ToDoListState extends State<ToDoList> {
   }
 
   void _handleNewItemSave() {
-    String title = _newItemTitle.text;
-    String description = _newItemDescription.text;
+    String title = _itemTitleController.text;
+    String description = _itemDescriptionController.text;
     Storage storage = new Storage();
     Uuid uuid = new Uuid();
 
@@ -190,14 +209,12 @@ class _ToDoListState extends State<ToDoList> {
       );
 
       storage.addToDoItem(newItem);
-      setState(() {
-        widget.items.add(newItem);
-      });
+      _changeToDoListState(newItem, Action.create);
     }
 
     // clear then close the modal
-    _newItemTitle.clear();
-    _newItemDescription.clear();
+    _itemTitleController.clear();
+    _itemDescriptionController.clear();
     Navigator.pop(context, false);
   }
 
@@ -212,9 +229,7 @@ class _ToDoListState extends State<ToDoList> {
         children: widget.items.map((Item item) {
           return new ToDoListItem(
             item: item,
-            inList: _completedItems.contains(item),
-            onListChanged: _handleToDoListChange,
-            onListItemRemovedCallback: _handleToDoListRemove,
+            onListChanged: _changeToDoListState,
           );
         }).toList(),
       ),

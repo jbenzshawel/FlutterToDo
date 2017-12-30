@@ -6,6 +6,24 @@ import 'item.dart';
 
 class Storage {
   List<Item> _toDoItems;
+  
+  Future<List<Item>> getToDoItems() async {
+    if (_toDoItems != null) return _toDoItems;
+
+    _toDoItems = [];
+
+    try {
+      String fileContents = await (await _getLocalFile()).readAsString();
+
+      for (dynamic item in JSON.decode(fileContents)) {
+        _toDoItems.add(new Item(id: item["id"], title: item["title"], description: item["description"], complete: item["complete"]));
+      }
+    } catch (e, s) {
+      _handleException(e, s);
+    }
+    
+    return _toDoItems;
+  }
 
   Future<Null> addToDoItem(Item item) async {
     List<Item> toDoItems = await getToDoItems();
@@ -26,22 +44,14 @@ class Storage {
     _updateStorage(toDoItems);
   }
 
-  Future<List<Item>> getToDoItems() async {
-    if (_toDoItems != null) return _toDoItems;
+  Future<Null> updateToDoItem(Item item) async {
+    Item itemToUpdate = (await getToDoItems()).firstWhere((i) => i.id == item.id);
 
-    _toDoItems = [];
+    itemToUpdate.title = item.title;
+    itemToUpdate.description = item.description;
+    itemToUpdate.complete = item.complete;
 
-    try {
-      String fileContents = await (await _getLocalFile()).readAsString();
-
-      for (dynamic item in JSON.decode(fileContents)) {
-        _toDoItems.add(new Item(id: item["id"], title: item["title"], description: item["description"]));
-      }
-    } catch (e, s) {
-      _handleException(e, s);
-    }
-    
-    return _toDoItems;
+    _updateStorage(_toDoItems);
   }
 
   Future<File> _getLocalFile() async {
@@ -54,7 +64,8 @@ class Storage {
           {
             "id" : "a01766f8-c4f5-4506-9262-1b408132f048",
             "title" : "Create widget to add to do items",
-            "description" : "Create a stateful widget for adding items to the to do list"
+            "description" : "Create a stateful widget for adding items to the to do list",
+            "complete" : false
           }
         ]
       ''');
@@ -74,7 +85,7 @@ class Storage {
       // update _toDoItems to match storage 
       _toDoItems = toDoItems; 
       // update file storage with latest to do item object 
-      String fileContents = JSON.encode(toDoItems);
+      String fileContents = JSON.encode(_toDoItems);
       await (await _getLocalFile()).writeAsString(fileContents);
     } catch (e, s) {
       _handleException(e, s);
