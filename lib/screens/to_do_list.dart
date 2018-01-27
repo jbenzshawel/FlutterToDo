@@ -205,7 +205,8 @@ class _ToDoListState extends State<ToDoList> {
       Item newItem = new Item(
         id: uuid.v1(), 
         title: title.trim(), 
-        description: description.trim()
+        description: description.trim(),
+        complete: false
       );
 
       storage.addToDoItem(newItem);
