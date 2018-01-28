@@ -9,9 +9,10 @@ typedef void ListChangedCallback(Item item, Action action);
 
 class ToDoListItem extends StatelessWidget {
   final Item item;
+  final String listId;
   final ListChangedCallback onListChanged;
 
-  ToDoListItem({Item item, this.onListChanged})
+  ToDoListItem({Item item, this.listId, this.onListChanged})
       : item = item,
         super(key: new ObjectKey(item));
 
@@ -32,7 +33,7 @@ class ToDoListItem extends StatelessWidget {
     void deleteConfirmCallback () {
       // remove the item from storage
       Storage storage = new Storage();
-      storage.deleteToDoItem(item.id);
+      storage.deleteToDoItem(listId, item);
       
       // remove the item from the view
       onListChanged(item, Action.delete);
@@ -72,7 +73,7 @@ class ToDoListItem extends StatelessWidget {
 
     // update the item in storage
     Storage storage = new Storage();
-    storage.updateToDoItem(item);
+    storage.updateToDoItem(listId, item);
 
     // update the item in the view
     onListChanged(item, Action.update);
@@ -107,10 +108,12 @@ class ToDoListItem extends StatelessWidget {
 }
 
 class ToDoList extends StatefulWidget {
-  ToDoList({Key key, this.items}) : super(key: key);
-
+  final String listId;
+  final String title;
   final List<Item> items;
-  
+    
+  ToDoList({Key key, this.listId, this.title, this.items}) : super(key: key);
+
   @override
   _ToDoListState createState() => new _ToDoListState();
 }
@@ -209,7 +212,7 @@ class _ToDoListState extends State<ToDoList> {
         complete: false
       );
 
-      storage.addToDoItem(newItem);
+      storage.addToDoItem(widget.listId, newItem);
       _changeToDoListState(newItem, Action.create);
     }
 
@@ -223,12 +226,13 @@ class _ToDoListState extends State<ToDoList> {
   Widget build(BuildContext context) {
     return new Scaffold(
       appBar: new AppBar(
-        title: new Text('To Do List'),
+        title: new Text(widget.title),
       ),
       body: new ListView(
         padding: new EdgeInsets.symmetric(vertical: 8.0),
         children: widget.items.map((Item item) {
           return new ToDoListItem(
+            listId: widget.listId,
             item: item,
             onListChanged: _changeToDoListState,
           );
