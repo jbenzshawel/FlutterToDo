@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'dart:async';
-import '../shared/item.dart';
+import '../shared/list_item.dart';
 import '../shared/storage.dart';
 import '../shared/action.dart';
 
-typedef void ListChangedCallback(Item item, Action action);
+typedef void ListChangedCallback(ListItem item, Action action);
 
-class ToDoListItem extends StatelessWidget {
-  final Item item;
+class ToDoListItemWidget extends StatelessWidget {
+  final ListItem item;
   final String listId;
   final ListChangedCallback onListChanged;
+  final Storage storage;
 
-  ToDoListItem({Item item, this.listId, this.onListChanged})
+  ToDoListItemWidget({ListItem item, this.listId, this.onListChanged, this.storage})
       : item = item,
         super(key: new ObjectKey(item));
 
@@ -29,14 +30,13 @@ class ToDoListItem extends StatelessWidget {
     );
   }
 
-  void _deleteItemPressed(BuildContext context, Item item) {
+  void _deleteItemPressed(BuildContext context, ListItem item) {
     void deleteConfirmCallback () {
-      // remove the item from storage
-      Storage storage = new Storage();
-      storage.deleteToDoItem(listId, item);
-      
       // remove the item from the view
       onListChanged(item, Action.delete);
+
+      // remove the item from storage
+      storage.deleteToDoItem(listId, item);
 
       // close the modal
       Navigator.pop(context, false);
@@ -68,15 +68,14 @@ class ToDoListItem extends StatelessWidget {
     );
   }
 
-  void _itemCompletePressed(Item item) {
+  void _itemCompletePressed(ListItem item) {
     item.complete = !item.complete;
-
-    // update the item in storage
-    Storage storage = new Storage();
-    storage.updateToDoItem(listId, item);
 
     // update the item in the view
     onListChanged(item, Action.update);
+
+    // update the item in storage
+    storage.updateToDoItem(listId, item);
   }
 
   @override
@@ -107,22 +106,23 @@ class ToDoListItem extends StatelessWidget {
   }
 }
 
-class ToDoList extends StatefulWidget {
+class ToDoListWidget extends StatefulWidget {
   final String listId;
   final String title;
-  final List<Item> items;
+  final List<ListItem> items;
+  final Storage storage;
     
-  ToDoList({Key key, this.listId, this.title, this.items}) : super(key: key);
+  ToDoListWidget({Key key, this.listId, this.title, this.items, this.storage}) : super(key: key);
 
   @override
   _ToDoListState createState() => new _ToDoListState();
 }
 
-class _ToDoListState extends State<ToDoList> {
+class _ToDoListState extends State<ToDoListWidget> {
   final TextEditingController _itemTitleController = new TextEditingController();
   final TextEditingController _itemDescriptionController = new TextEditingController();
 
-  Future<Null> _changeToDoListState(Item item, Action action) async {
+  Future<Null> _changeToDoListState(ListItem item, Action action) async {
     switch (action) {
       case Action.create:
         setState(() {
@@ -131,7 +131,7 @@ class _ToDoListState extends State<ToDoList> {
         break;
       case Action.update:
         setState(() {
-          Item itemToUpdate = widget.items.firstWhere((i) => i.id == item.id);
+          ListItem itemToUpdate = widget.items.firstWhere((i) => i.id == item.id);
           itemToUpdate.title = item.title;
           itemToUpdate.description = item.description;
           itemToUpdate.complete = item.complete;
@@ -201,19 +201,18 @@ class _ToDoListState extends State<ToDoList> {
   void _handleNewItemSave() {
     String title = _itemTitleController.text;
     String description = _itemDescriptionController.text;
-    Storage storage = new Storage();
     Uuid uuid = new Uuid();
 
     if (title.length > 0 && description.length > 0) {
-      Item newItem = new Item(
+      ListItem newItem = new ListItem(
         id: uuid.v1(), 
         title: title.trim(), 
         description: description.trim(),
         complete: false
       );
 
-      storage.addToDoItem(widget.listId, newItem);
       _changeToDoListState(newItem, Action.create);
+      widget.storage.addToDoItem(widget.listId, newItem);
     }
 
     // clear then close the modal
@@ -230,11 +229,12 @@ class _ToDoListState extends State<ToDoList> {
       ),
       body: new ListView(
         padding: new EdgeInsets.symmetric(vertical: 8.0),
-        children: widget.items.map((Item item) {
-          return new ToDoListItem(
+        children: widget.items.map((ListItem item) {
+          return new ToDoListItemWidget(
             listId: widget.listId,
             item: item,
             onListChanged: _changeToDoListState,
+            storage: widget.storage,
           );
         }).toList(),
       ),

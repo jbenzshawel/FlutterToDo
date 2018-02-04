@@ -1,11 +1,11 @@
-import 'item.dart';
+import 'list_item.dart';
 
-class ItemList {
+class ToDoItem {
   String id;
   String title;
-  List<Item> items;
+  List<ListItem> items;
 
-  ItemList({this.id, this.title, this.items});
+  ToDoItem({this.id, this.title, this.items});
 
   Map toJson() { 
     Map map = new Map();

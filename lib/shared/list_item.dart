@@ -1,12 +1,12 @@
-class Item {
+class ListItem {
   String id;
   String title;
   String description;
   bool complete = false;
 
-  Item({this.id, this.title, this.description, this.complete});  
+  ListItem({this.id, this.title, this.description, this.complete});  
 
-  Item.fromJson(Map json)
+  ListItem.fromJson(Map json)
     : id = json["id"], title = json["title"], description = json ["description"], complete = json["complete"];
     
   Map toJson() { 

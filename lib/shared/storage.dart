@@ -2,34 +2,34 @@ import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
 import 'package:path_provider/path_provider.dart';
-import 'item.dart';
-import 'item_list.dart';
+import 'list_item.dart';
+import 'to_do_item.dart';
 
 class Storage {
-  Map<String, ItemList> _itemListCache;
+  Map<String, ToDoItem> itemListCache;
 
-  Future<Map<String, ItemList>> getToDoLists() async {
-    if (_itemListCache != null) return _itemListCache;
+  Future<Map<String, ToDoItem>> getToDoLists() async {
+    if (itemListCache != null) return itemListCache;
 
-    _itemListCache = new Map<String, ItemList>();
+    itemListCache = new Map<String, ToDoItem>();
 
     try {
       String fileContents = await (await _getLocalFile()).readAsString();
 
       for (dynamic itemList in JSON.decode(fileContents)) {
         String listId = itemList["id"];
-        List<Item> items = itemList["items"].map((itemHash) => new Item.fromJson(itemHash)).toList();
-        _itemListCache[listId] = new ItemList(id: listId, title: itemList["title"], items: items);
+        List<ListItem> items = itemList["items"].map((itemHash) => new ListItem.fromJson(itemHash)).toList();
+        itemListCache[listId] = new ToDoItem(id: listId, title: itemList["title"], items: items);
       }
     } catch (e, s) {
       _handleException(e, s);
     }
 
-    return _itemListCache;
+    return itemListCache;
   }
 
-  Future<ItemList> getToDoItemList(String listId) async {
-    Map<String, ItemList> itemListMap = await getToDoLists();
+  Future<ToDoItem> getToDoItemList(String listId) async {
+    Map<String, ToDoItem> itemListMap = await getToDoLists();
 
     if (itemListMap.containsKey(listId)) {
       return itemListMap[listId];
@@ -38,8 +38,8 @@ class Storage {
     return null;
   }
 
-  Future<List<Item>> getToDoItems(String listId) async {
-    ItemList itemList = await getToDoItemList(listId);
+  Future<List<ListItem>> getToDoItems(String listId) async {
+    ToDoItem itemList = await getToDoItemList(listId);
 
     if (itemList != null) {
       return itemList.items;
@@ -48,24 +48,28 @@ class Storage {
     return null;
   }
 
-  Future<Null> addToDoItem(String listId, Item item) async {
-    Map<String, ItemList> itemListMap = await getToDoLists();
+  Future<Null> addToDoItem(String listId, ListItem item) async {
+    Map<String, ToDoItem> itemListMap = await getToDoLists();
     
     if (!itemListMap.containsKey(listId)) {
       throw new Exception('ItemList with id $listId does not exist.');
     }
-
-    if (itemListMap[listId].items.any((i) => i.id == item.id)) {
-      throw new Exception('Item with id ${item.id} already exists in storage.');
-    }
-
-    itemListMap[listId].items.add(item);
     
     _updateStorage(itemListMap);
   }
 
-  Future<Null> deleteToDoItem(String listId, Item item) async {
-    Map<String, ItemList> itemListMap = await getToDoLists();
+  Future<Null> deleteToDoItem(String listId, ListItem item) async {
+    Map<String, ToDoItem> itemListMap = await getToDoLists();
+    
+    if (!itemListMap.containsKey(listId)) {
+      throw new Exception('ItemList with id $listId does not exist.');
+    }
+    
+    _updateStorage(itemListMap);
+  }
+
+  Future<Null> updateToDoItem(String listId, ListItem item) async {
+    Map<String, ToDoItem> itemListMap = await getToDoLists();
     
     if (!itemListMap.containsKey(listId)) {
       throw new Exception('ItemList with id $listId does not exist.');
@@ -75,22 +79,7 @@ class Storage {
       throw new Exception('Item with id ${item.id} does not exists in storage.');
     }
 
-    itemListMap[listId].items.removeWhere((i) => i.id == item.id);
-    _updateStorage(itemListMap);
-  }
-
-  Future<Null> updateToDoItem(String listId, Item item) async {
-    Map<String, ItemList> itemListMap = await getToDoLists();
-    
-    if (!itemListMap.containsKey(listId)) {
-      throw new Exception('ItemList with id $listId does not exist.');
-    }
-  
-    if (!itemListMap[listId].items.any((i) => i.id == item.id)) {
-      throw new Exception('Item with id ${item.id} does not exists in storage.');
-    }
-
-    Item itemToUpdate = itemListMap[listId].items.firstWhere((i) => i.id == item.id);
+    ListItem itemToUpdate = itemListMap[listId].items.firstWhere((i) => i.id == item.id);
 
     itemToUpdate.title = item.title;
     itemToUpdate.description = item.description;
@@ -129,13 +118,13 @@ class Storage {
     return '$dir/storageList.json';
   }
 
-  Future<Null> _updateStorage(Map<String, ItemList> itemListMap) async {
+  Future<Null> _updateStorage(Map<String, ToDoItem> itemListMap) async {
     try {
-      // update cache 
-      _itemListCache = itemListMap;
+      // update cache
+      itemListCache = itemListMap;
 
       // update file storage
-      String fileContents = JSON.encode(_itemListCache.values.toList());
+      String fileContents = JSON.encode(itemListCache.values.toList());
       await (await _getLocalFile()).writeAsString(fileContents);
     } catch (e, s) {
       _handleException(e, s);
