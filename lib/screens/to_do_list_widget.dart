@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'dart:async';
-import '../shared/list_item.dart';
+import '../shared/item.dart';
 import '../shared/storage.dart';
 import '../shared/action.dart';
 
-typedef void ListChangedCallback(ListItem item, Action action);
+typedef void ListChangedCallback(Item item, Action action);
 
 class ToDoListItemWidget extends StatelessWidget {
-  final ListItem item;
+  final Item item;
   final String listId;
   final ListChangedCallback onListChanged;
   final Storage storage;
 
-  ToDoListItemWidget({ListItem item, this.listId, this.onListChanged, this.storage})
+  ToDoListItemWidget({Item item, this.listId, this.onListChanged, this.storage})
       : item = item,
         super(key: new ObjectKey(item));
 
@@ -30,7 +30,7 @@ class ToDoListItemWidget extends StatelessWidget {
     );
   }
 
-  void _deleteItemPressed(BuildContext context, ListItem item) {
+  void _deleteItemPressed(BuildContext context, Item item) {
     void deleteConfirmCallback () {
       // remove the item from the view
       onListChanged(item, Action.delete);
@@ -68,7 +68,7 @@ class ToDoListItemWidget extends StatelessWidget {
     );
   }
 
-  void _itemCompletePressed(ListItem item) {
+  void _itemCompletePressed(Item item) {
     item.complete = !item.complete;
 
     // update the item in the view
@@ -109,7 +109,7 @@ class ToDoListItemWidget extends StatelessWidget {
 class ToDoListWidget extends StatefulWidget {
   final String listId;
   final String title;
-  final List<ListItem> items;
+  final List<Item> items;
   final Storage storage;
     
   ToDoListWidget({Key key, this.listId, this.title, this.items, this.storage}) : super(key: key);
@@ -122,7 +122,7 @@ class _ToDoListState extends State<ToDoListWidget> {
   final TextEditingController _itemTitleController = new TextEditingController();
   final TextEditingController _itemDescriptionController = new TextEditingController();
 
-  Future<Null> _changeToDoListState(ListItem item, Action action) async {
+  Future<Null> _changeToDoListState(Item item, Action action) async {
     switch (action) {
       case Action.create:
         setState(() {
@@ -131,7 +131,7 @@ class _ToDoListState extends State<ToDoListWidget> {
         break;
       case Action.update:
         setState(() {
-          ListItem itemToUpdate = widget.items.firstWhere((i) => i.id == item.id);
+          Item itemToUpdate = widget.items.firstWhere((i) => i.id == item.id);
           itemToUpdate.title = item.title;
           itemToUpdate.description = item.description;
           itemToUpdate.complete = item.complete;
@@ -204,7 +204,7 @@ class _ToDoListState extends State<ToDoListWidget> {
     Uuid uuid = new Uuid();
 
     if (title.length > 0 && description.length > 0) {
-      ListItem newItem = new ListItem(
+      Item newItem = new Item(
         id: uuid.v1(), 
         title: title.trim(), 
         description: description.trim(),
@@ -229,7 +229,7 @@ class _ToDoListState extends State<ToDoListWidget> {
       ),
       body: new ListView(
         padding: new EdgeInsets.symmetric(vertical: 8.0),
-        children: widget.items.map((ListItem item) {
+        children: widget.items.map((Item item) {
           return new ToDoListItemWidget(
             listId: widget.listId,
             item: item,

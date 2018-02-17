@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../shared/to_do_item.dart';
+import '../shared/to_do_list.dart';
 
 class ToDoItemWidget extends StatelessWidget {
-  final ToDoItem toDoItem;
+  final ToDoList toDoItem;
 
   ToDoItemWidget({Key key, toDoItem}) 
     : toDoItem = toDoItem,
@@ -30,7 +30,7 @@ class ToDoItemWidget extends StatelessWidget {
 
 class ToDoHomeWidget extends StatefulWidget {
 
-  final List<ToDoItem> toDoItems;
+  final List<ToDoList> toDoItems;
     
   ToDoHomeWidget({Key key, this.toDoItems}) : super(key: key);
 
@@ -48,7 +48,7 @@ class _ToDoHomeState extends State<ToDoHomeWidget> {
       ),
       body: new ListView(
         padding: new EdgeInsets.symmetric(vertical: 8.0),
-        children: widget.toDoItems.map((ToDoItem toDoItem) {
+        children: widget.toDoItems.map((ToDoList toDoItem) {
           return new ToDoItemWidget(
             toDoItem: toDoItem
           );

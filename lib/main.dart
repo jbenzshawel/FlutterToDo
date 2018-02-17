@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'shared/storage.dart';
-import 'shared/to_do_item.dart';
+import 'shared/to_do_list.dart';
 import 'screens/to_do_list_widget.dart';
 import 'screens/to_do_home_widget.dart';
 
@@ -23,7 +23,7 @@ class ToDoAppState extends State<ToDoApp> {
     if (path[1].startsWith('list:')) {
       final String listId = path[1].substring(5);
 
-      ToDoItem toDoItem = widget.storage.itemListCache[listId];
+      ToDoList toDoItem = widget.storage.toDoListCache[listId];
 
       return new MaterialPageRoute<Null>(
         settings: settings,
@@ -41,7 +41,7 @@ class ToDoAppState extends State<ToDoApp> {
 
   @override
   Widget build(BuildContext context) {
-    List<ToDoItem> toDoItems = widget.storage.itemListCache.values.toList();
+    List<ToDoList> toDoItems = widget.storage.toDoListCache.values.toList();
 
     return new MaterialApp(
       title: 'To Do List',
