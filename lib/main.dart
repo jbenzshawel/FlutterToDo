@@ -50,7 +50,7 @@ class ToDoAppState extends State<ToDoApp> {
         primaryColor: Colors.purple.shade400
       ),
       routes: <String, WidgetBuilder>{
-        '/': (BuildContext context) => new ToDoHomeWidget(toDoItems: toDoItems, storage: widget.storage),
+        '/': (BuildContext context) => new ToDoHomeWidget(toDoLists: toDoItems, storage: widget.storage),
       },
       onGenerateRoute: _getToDoRoute,
     );

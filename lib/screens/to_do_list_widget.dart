@@ -13,9 +13,8 @@ class ToDoListItemWidget extends StatelessWidget {
   final ListChangedCallback onListChanged;
   final Storage storage;
 
-  ToDoListItemWidget({Item item, this.listId, this.onListChanged, this.storage})
-      : item = item,
-        super(key: new ObjectKey(item));
+  ToDoListItemWidget({this.item, this.listId, this.onListChanged, this.storage})
+      : super(key: new ObjectKey(item));
 
   Color _getColor(BuildContext context, bool complete) {
     return complete ? Colors.black54 : Theme.of(context).primaryColor;
@@ -30,13 +29,13 @@ class ToDoListItemWidget extends StatelessWidget {
     );
   }
 
-  void _deleteItemPressed(BuildContext context, Item item) {
+  void _deleteItemPressed(BuildContext context) {
     void deleteConfirmCallback () {
       // remove the item from the view
       onListChanged(item, Action.delete);
 
       // remove the item from storage
-      storage.updateItemStorage(listId, item);
+      storage.updateItem(listId, item);
 
       // close the modal
       Navigator.pop(context, false);
@@ -45,25 +44,11 @@ class ToDoListItemWidget extends StatelessWidget {
     showDialog(
       context: context,
       barrierDismissible: true,
-      child: new AlertDialog(
-        title: const Text('Delete Item'),
-        content: new Text('Are you sure you want to delete the "${item.title}" item?'),
-        actions: <Widget>[
-          new FlatButton(
-            onPressed: deleteConfirmCallback,
-            child: new Row(
-              children: <Widget>[
-                const Text('Yes'),
-              ],
-            ),
-          ),
-          new FlatButton(
-            onPressed: () {
-              Navigator.pop(context, false);
-            },
-            child: const Text('No'),
-          ),
-        ],
+      child: WidgetHelper.confirmDialogWithClose(
+          context,
+          'Delete Item',
+          'Are you sure you want to delete the "${item.title}" item?',
+          deleteConfirmCallback
       )
     );
   }
@@ -75,7 +60,7 @@ class ToDoListItemWidget extends StatelessWidget {
     onListChanged(item, Action.update);
 
     // update the item in storage
-    storage.updateItemStorage(listId, item);
+    storage.updateItem(listId, item);
   }
 
   @override
@@ -99,7 +84,7 @@ class ToDoListItemWidget extends StatelessWidget {
           icon: new Icon(Icons.delete_outline),
           padding: const EdgeInsets.only(bottom: 3.0, right: 3.0),
           onPressed: () {
-            _deleteItemPressed(context, item);
+            _deleteItemPressed(context);
           },
         )
     ]);
@@ -184,7 +169,7 @@ class _ToDoListState extends State<ToDoListWidget> {
       );
 
       _changeToDoListState(newItem, Action.create);
-      widget.storage.updateItemStorage(widget.listId, newItem);
+      widget.storage.updateItem(widget.listId, newItem);
     }
 
     // clear then close the modal

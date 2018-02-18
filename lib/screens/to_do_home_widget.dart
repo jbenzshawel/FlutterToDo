@@ -4,15 +4,39 @@ import '../shared/to_do_list.dart';
 import '../shared/widget_helper.dart';
 import '../shared/storage.dart';
 
-class ToDoItemWidget extends StatelessWidget {
-  final ToDoList toDoItem;
+typedef void RemoveFromListCallback(ToDoList toDoList);
 
-  ToDoItemWidget({Key key, toDoItem}) 
-    : toDoItem = toDoItem,
-      super(key: new ObjectKey(toDoItem));
+class ToDoItemWidget extends StatelessWidget {
+  final ToDoList toDoList;
+  final Storage storage;
+  final RemoveFromListCallback onRemove;
+
+  ToDoItemWidget({this.toDoList, this.storage, this.onRemove})
+    : super(key: new ObjectKey(toDoList));
 
   void _handleShowToDoList(BuildContext context) {
-    Navigator.pushNamed(context, '/list:${toDoItem.id}');
+    Navigator.pushNamed(context, '/list:${toDoList.id}');
+  }
+
+  void _deleteListPressed(BuildContext context) {
+    void deleteConfirmCallback () {
+      onRemove(toDoList);
+
+      storage.deleteList(toDoList);
+
+      Navigator.pop(context, false);
+    }
+
+    showDialog(
+        context: context,
+        barrierDismissible: true,
+        child: WidgetHelper.confirmDialogWithClose(
+            context,
+            'Delete List',
+            'Are you sure you want to delete the "${toDoList.title}" list?',
+            deleteConfirmCallback
+        )
+    );
   }
 
   @override
@@ -22,24 +46,31 @@ class ToDoItemWidget extends StatelessWidget {
         new Expanded(
           child: new ListTile(
             title: new Text(
-                toDoItem.title,
+                toDoList.title,
                 style: new TextStyle (color: Colors.blue.shade300)
             ),
             onTap: () {
               _handleShowToDoList(context);
             }
           )
-        )  
+        ),
+        new IconButton(
+          icon: new Icon(Icons.delete_outline),
+            padding: const EdgeInsets.only(bottom: 3.0, right: 3.0),
+            onPressed: () {
+            _deleteListPressed(context);
+            }
+        )
       ]);
   }
 }
 
 class ToDoHomeWidget extends StatefulWidget {
-  final List<ToDoList> toDoItems;
+  final List<ToDoList> toDoLists;
   final Storage storage;
 
 
-  ToDoHomeWidget({Key key, this.toDoItems, this.storage}) : super(key: key);
+  ToDoHomeWidget({Key key, this.toDoLists, this.storage}) : super(key: key);
 
   @override
   _ToDoHomeState createState() => new _ToDoHomeState();
@@ -47,6 +78,12 @@ class ToDoHomeWidget extends StatefulWidget {
 
 class _ToDoHomeState extends State<ToDoHomeWidget> {
   final TextEditingController _listTitleController = new TextEditingController();
+
+  void _onRemoveCallback(ToDoList toDoList) {
+    setState(() {
+      widget.toDoLists.removeWhere((list) => list.id == toDoList.id);
+    });
+  }
 
   void _handleAddToDoPress() {
     showDialog(
@@ -82,10 +119,10 @@ class _ToDoHomeState extends State<ToDoHomeWidget> {
       );
 
       setState(() {
-        widget.toDoItems.add(newList);
+        widget.toDoLists.add(newList);
       });
 
-      widget.storage.updateListStorage(newList);
+      widget.storage.updateList(newList);
     }
 
     _listTitleController.clear();
@@ -100,9 +137,11 @@ class _ToDoHomeState extends State<ToDoHomeWidget> {
       ),
       body: new ListView(
         padding: new EdgeInsets.symmetric(vertical: 8.0),
-        children: widget.toDoItems.map((ToDoList toDoItem) {
+        children: widget.toDoLists.map((ToDoList toDoList) {
           return new ToDoItemWidget(
-            toDoItem: toDoItem
+            toDoList: toDoList,
+            storage: widget.storage,
+            onRemove: _onRemoveCallback,
           );
         }).toList(),
       ),

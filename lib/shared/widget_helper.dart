@@ -28,4 +28,27 @@ class WidgetHelper {
       ],
     );
   }
+
+  static AlertDialog confirmDialogWithClose(BuildContext context, String title, String message, VoidCallback callback) {
+    return new AlertDialog(
+      title:  new Text(title),
+      content: new Text(message),
+      actions: <Widget>[
+        new FlatButton(
+          onPressed: callback,
+          child: new Row(
+            children: <Widget>[
+              const Text('Yes'),
+            ],
+          ),
+        ),
+        new FlatButton(
+          onPressed: () {
+            Navigator.pop(context, false);
+          },
+          child: const Text('No'),
+        ),
+      ],
+    );
+  }
 }

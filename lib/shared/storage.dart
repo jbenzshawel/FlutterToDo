@@ -43,22 +43,30 @@ class Storage {
     return (await getToDoList(listId)).items;
   }
 
-  Future<Null> updateItemStorage(String listId, Item item) async {
+  Future<Null> updateItem(String listId, Item item) async {
     Map<String, ToDoList> itemListMap = await getToDoLists();
     
     if (!itemListMap.containsKey(listId)) {
       throw new Exception('ToDoList with id $listId does not exist.');
     }
 
-    _updateStorage(itemListMap);
+    await _updateStorage(itemListMap);
   }
 
-  Future<Null> updateListStorage(ToDoList list) async {
+  Future<Null> updateList(ToDoList list) async {
     Map<String, ToDoList> itemListMap = await getToDoLists();
 
     itemListMap[list.id] = list;
 
-    _updateStorage(itemListMap);
+    await _updateStorage(itemListMap);
+  }
+
+  Future<Null> deleteList(ToDoList list) async {
+    Map<String, ToDoList> itemListMap = await getToDoLists();
+
+    itemListMap.remove(list.id);
+
+    await _updateStorage(itemListMap);
   }
 
   Future<File> _getLocalFile() async {
