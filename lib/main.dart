@@ -23,14 +23,14 @@ class ToDoAppState extends State<ToDoApp> {
     if (path[1].startsWith('list:')) {
       final String listId = path[1].substring(5);
 
-      ToDoList toDoItem = widget.storage.toDoListCache[listId];
+      ToDoList toDoList = widget.storage.toDoListCache[listId];
 
       return new MaterialPageRoute<Null>(
         settings: settings,
         builder: (BuildContext context) => new ToDoListWidget(
-          listId: listId, 
-          title: toDoItem.title, 
-          items: toDoItem.items,
+          listId: listId,
+          title: toDoList.title,
+          items: toDoList.items,
           storage: widget.storage,
         )
       );
@@ -45,9 +45,12 @@ class ToDoAppState extends State<ToDoApp> {
 
     return new MaterialApp(
       title: 'To Do List',
-      theme: new ThemeData(brightness: Brightness.light),
+      theme: new ThemeData(
+        brightness: Brightness.light,
+        primaryColor: Colors.purple.shade400
+      ),
       routes: <String, WidgetBuilder>{
-        '/': (BuildContext context) => new ToDoHomeWidget(toDoItems: toDoItems),
+        '/': (BuildContext context) => new ToDoHomeWidget(toDoItems: toDoItems, storage: widget.storage),
       },
       onGenerateRoute: _getToDoRoute,
     );

@@ -43,42 +43,20 @@ class Storage {
     return (await getToDoList(listId)).items;
   }
 
-  Future<Null> addToDoItem(String listId, Item item) async {
+  Future<Null> updateItemStorage(String listId, Item item) async {
     Map<String, ToDoList> itemListMap = await getToDoLists();
     
     if (!itemListMap.containsKey(listId)) {
       throw new Exception('ToDoList with id $listId does not exist.');
     }
-    
+
     _updateStorage(itemListMap);
   }
 
-  Future<Null> deleteToDoItem(String listId, Item item) async {
+  Future<Null> updateListStorage(ToDoList list) async {
     Map<String, ToDoList> itemListMap = await getToDoLists();
-    
-    if (!itemListMap.containsKey(listId)) {
-      throw new Exception('ToDoList with id $listId does not exist.');
-    }
-    
-    _updateStorage(itemListMap);
-  }
 
-  Future<Null> updateToDoItem(String listId, Item item) async {
-    Map<String, ToDoList> itemListMap = await getToDoLists();
-    
-    if (!itemListMap.containsKey(listId)) {
-      throw new Exception('ToDoList with id $listId does not exist.');
-    }
-  
-    if (!itemListMap[listId].items.any((i) => i.id == item.id)) {
-      throw new Exception('Item with id ${item.id} does not exists in storage.');
-    }
-
-    Item itemToUpdate = itemListMap[listId].items.firstWhere((i) => i.id == item.id);
-
-    itemToUpdate.title = item.title;
-    itemToUpdate.description = item.description;
-    itemToUpdate.complete = item.complete;
+    itemListMap[list.id] = list;
 
     _updateStorage(itemListMap);
   }

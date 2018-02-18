@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
-import 'dart:async';
 import '../shared/item.dart';
 import '../shared/storage.dart';
 import '../shared/action.dart';
+import '../shared/widget_helper.dart';
 
 typedef void ListChangedCallback(Item item, Action action);
 
@@ -36,7 +36,7 @@ class ToDoListItemWidget extends StatelessWidget {
       onListChanged(item, Action.delete);
 
       // remove the item from storage
-      storage.deleteToDoItem(listId, item);
+      storage.updateItemStorage(listId, item);
 
       // close the modal
       Navigator.pop(context, false);
@@ -75,7 +75,7 @@ class ToDoListItemWidget extends StatelessWidget {
     onListChanged(item, Action.update);
 
     // update the item in storage
-    storage.updateToDoItem(listId, item);
+    storage.updateItemStorage(listId, item);
   }
 
   @override
@@ -122,7 +122,7 @@ class _ToDoListState extends State<ToDoListWidget> {
   final TextEditingController _itemTitleController = new TextEditingController();
   final TextEditingController _itemDescriptionController = new TextEditingController();
 
-  Future<Null> _changeToDoListState(Item item, Action action) async {
+  _changeToDoListState(Item item, Action action) {
     switch (action) {
       case Action.create:
         setState(() {
@@ -148,42 +148,14 @@ class _ToDoListState extends State<ToDoListWidget> {
   }
 
   void _handleAddItemPress() {
-    Widget dialogTitle = new Row(
-      children: <Widget>[
-        new Expanded(
-          child: new Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-               new Text(
-                  "New To Do",  
-              )
-            ],
-          ),
-        ),
-        new CloseButton()
-      ],
-    );
-
-    Container buildTextField(String label, TextEditingController controller) {
-      return new Container(
-        padding: const EdgeInsets.only(left: 15.0, right: 15.0),
-        child: new TextField(
-          controller: controller,
-          decoration: new InputDecoration(
-            hintText: label,
-          )
-        )
-      );
-    }
-
     showDialog(
       context: context,
       barrierDismissible: true,
       child: new SimpleDialog(
-        title: dialogTitle,
+        title: WidgetHelper.dialogTitleWithClose("New Item"),
         children: <Widget>[    
-          buildTextField("Title", _itemTitleController),
-          buildTextField("Description", _itemDescriptionController),
+          WidgetHelper.textField("Title", _itemTitleController),
+          WidgetHelper.textField("Description", _itemDescriptionController),
           new Container(
             padding: const EdgeInsets.only(top:30.0, left: 10.0, right: 10.0, bottom: 10.0),
             child: new MaterialButton(
@@ -212,7 +184,7 @@ class _ToDoListState extends State<ToDoListWidget> {
       );
 
       _changeToDoListState(newItem, Action.create);
-      widget.storage.addToDoItem(widget.listId, newItem);
+      widget.storage.updateItemStorage(widget.listId, newItem);
     }
 
     // clear then close the modal
